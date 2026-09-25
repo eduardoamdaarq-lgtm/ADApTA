@@ -1,0 +1,6 @@
+{
+  "name": "AcessiLaudo Pro - Inspeção Predial e Laudo de Acessibilidade",
+  "description": "Sistema profissional de automação de inspeção predial de acessibilidade (NBR 9050 / NBR 16537), checklist de campo, laudo técnico pericial e relatórios automáticos com plano de ação.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
