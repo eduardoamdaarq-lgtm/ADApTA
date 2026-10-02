@@ -41,15 +41,15 @@ export const LaudoTecnico: React.FC<LaudoTecnicoProps> = ({
   const validTotal = totalItems - naoSeAplica;
   const complianceRate = validTotal > 0 ? Math.round((conformes / validTotal) * 100) : 0;
 
-  // Agrupamento por setor
-  const categories = Array.from(new Set(items.map(i => i.categoryId))).map(catId => {
-    const catItems = items.filter(i => i.categoryId === catId);
-    const catName = catItems[0]?.categoryName || catId;
+  // Agrupamento por setor (1.1 Setores)
+  const categories = Array.from(new Set(items.map(i => i.sectorId || i.categoryId || 'geral'))).map(sectorId => {
+    const catItems = items.filter(i => (i.sectorId || i.categoryId) === sectorId);
+    const catName = catItems[0]?.sectorName || catItems[0]?.categoryName || sectorId;
     const catConf = catItems.filter(i => i.status === 'conforme').length;
     const catNc = catItems.filter(i => i.status === 'nao_conforme').length;
     const catValid = catItems.length - catItems.filter(i => i.status === 'nao_se_aplica').length;
     const catRate = catValid > 0 ? Math.round((catConf / catValid) * 100) : 0;
-    return { id: catId, name: catName, total: catItems.length, conf: catConf, nc: catNc, rate: catRate };
+    return { id: sectorId, name: catName, total: catItems.length, conf: catConf, nc: catNc, rate: catRate };
   });
 
   // Regenerar Resumo com IA
@@ -158,14 +158,16 @@ export const LaudoTecnico: React.FC<LaudoTecnicoProps> = ({
         <header className="border-b-2 border-neutral-900 pb-6 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <div className="text-xs font-bold tracking-widest uppercase text-neutral-600 mb-1">
-                Laudo Técnico de Inspeção Predial · Acessibilidade
+              <div className="text-xs font-bold tracking-widest uppercase text-neutral-600 mb-1 flex items-center gap-2">
+                <span>Laudo Técnico de Inspeção Predial</span>
+                <span className="text-neutral-300">·</span>
+                <span className="font-extrabold text-blue-900">Sistema ADApTA</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
                 LAUDO PERICIAL DE ACESSIBILIDADE
               </h1>
               <div className="text-sm font-semibold text-blue-800 mt-1">
-                Avaliação de Conformidade Normativa · ABNT NBR 9050:2020 & NBR 16537:2016
+                Avaliação Digital dos Parâmetros Técnicos de Acessibilidade · ABNT NBR 9050 & NBR 16537
               </div>
             </div>
 
@@ -196,6 +198,18 @@ export const LaudoTecnico: React.FC<LaudoTecnicoProps> = ({
             </div>
 
             <div className="sm:col-span-2">
+              <span className="text-neutral-500 block font-medium">Classificação Legal da Edificação (Decreto Federal nº 5.296/2004):</span>
+              <span className="inline-block mt-0.5 font-bold text-xs text-blue-900 bg-blue-100/70 border border-blue-200 px-2 py-0.5 rounded">
+                {building.classification === 'uso_publico' ? 'Edificação de Uso Público' : 'Edificação de Uso Coletivo'}
+              </span>
+              <span className="text-[11px] text-neutral-600 block mt-1 leading-snug">
+                {building.classification === 'uso_publico'
+                  ? 'Aquelas administradas por entidades da administração pública, direta e indireta, ou por empresas prestadoras de serviços públicos e destinadas ao público em geral.'
+                  : 'Aquelas destinadas às atividades de natureza comercial, hoteleira, cultural, esportiva, financeira, turística, recreativa, social, religiosa, educacional, industrial e de saúde, inclusive as edificações de prestação de serviços de atividades da mesma natureza.'}
+              </span>
+            </div>
+
+            <div className="sm:col-span-2">
               <span className="text-neutral-500 block font-medium">Endereço Completo:</span>
               <span className="font-semibold text-neutral-900">
                 {building.address} · {building.city} - {building.state} · CEP {building.zipCode}
@@ -221,9 +235,25 @@ export const LaudoTecnico: React.FC<LaudoTecnicoProps> = ({
               <span className="text-blue-800 font-semibold block">{building.technicalCouncilId}</span>
             </div>
 
-            <div>
-              <span className="text-neutral-500 block font-medium">Documento de Responsabilidade:</span>
-              <span className="font-mono font-semibold text-neutral-900">{building.rrtArtNumber}</span>
+            <div className="sm:col-span-2 pt-2 border-t border-neutral-200/80">
+              <span className="text-neutral-700 block font-bold text-xs mb-1.5 flex items-center gap-1.5">
+                <span className="font-mono bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded text-[10px]">1.1</span>
+                <span>Setores da Edificação Inspecionados:</span>
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {(project.sectors && project.sectors.length > 0 ? project.sectors : categories).map(sec => {
+                  const itemsCount = project.items.filter(i => (i.sectorId || i.categoryId) === sec.id).length;
+                  return (
+                    <span
+                      key={sec.id}
+                      className="bg-white border border-neutral-300 text-neutral-800 rounded px-2 py-1 text-[11px] font-medium flex items-center gap-1 shadow-2xs"
+                    >
+                      <strong className="text-blue-900">{sec.name}</strong>
+                      <span className="text-neutral-400 font-mono">({itemsCount} elementos)</span>
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>
@@ -242,11 +272,13 @@ export const LaudoTecnico: React.FC<LaudoTecnicoProps> = ({
             </p>
             <ul className="list-disc list-inside space-y-1 font-medium text-neutral-800 pl-2">
               <li><strong>ABNT NBR 9050:2020</strong> – Acessibilidade a edificações, mobiliário, espaços e equipamentos urbanos;</li>
-              <li><strong>ABNT NBR 16537:2016</strong> – Acessibilidade — Sinalização tátil no piso — Diretrizes para elaboração de projetos e instalação;</li>
+              <li><strong>ABNT NBR 16537:2024</strong> – Acessibilidade — Sinalização tátil no piso — Diretrizes para elaboração de projetos e instalação;</li>
+              <li><strong>ABNT NBR 9077:2025</strong> – Saídas de emergência em edifícios e compatibilização com rotas de fuga acessíveis;</li>
+              <li><strong>ABNT NBR 16858-3:2022 / NBR ISO 9386-1:2013</strong> – Elevadores e plataformas de elevação motorizadas para acessibilidade;</li>
               <li><strong>ABNT NBR 16747:2020</strong> – Inspeção predial — Diretrizes, conceitos, terminologia e procedimento;</li>
               <li><strong>Lei Federal nº 13.146/2015</strong> – Lei Brasileira de Inclusão da Pessoa com Deficiência (Estatuto da PCD);</li>
-              <li><strong>Decreto Federal nº 5.296/2004</strong> – Regulamenta as Leis nos 10.048/2000 e 10.098/2000;</li>
-              <li><strong>ABNT NBR NM 313:2007</strong> – Elevadores de passageiros — Requisitos de acessibilidade.</li>
+              <li><strong>Decretos Federais nº 5.296/2004 e nº 9.451/2018</strong> – Regulamentação de acessibilidade e unidades adaptáveis;</li>
+              <li><strong>Resolução CONTRAN nº 965/2022</strong> – Sinalização e dimensionamento de vagas de estacionamento reservadas para PCD e Idosos.</li>
             </ul>
           </div>
         </section>
@@ -322,10 +354,18 @@ export const LaudoTecnico: React.FC<LaudoTecnicoProps> = ({
                 >
                   {/* Cabeçalho do Apontamento */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-neutral-200 gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono font-bold text-xs bg-neutral-900 text-white px-2 py-0.5 rounded">
                         Item {idx + 1} · {item.code}
                       </span>
+                      <span className="text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                        1.1 Setor: {item.sectorName || item.categoryName}
+                      </span>
+                      {item.elementName && (
+                        <span className="text-xs font-medium text-neutral-800 bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 rounded font-mono">
+                          1.1.1 Elemento: {item.elementName}
+                        </span>
+                      )}
                       <h3 className="text-sm font-bold text-neutral-900">
                         {item.title}
                       </h3>

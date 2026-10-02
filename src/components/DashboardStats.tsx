@@ -17,6 +17,10 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ items, onFilterS
   const validItems = total - naoSeAplica;
   const rate = validItems > 0 ? Math.round((conformes / validItems) * 100) : 0;
 
+  // Cálculo do progresso de preenchimento/conclusão da inspeção
+  const completedCount = conformes + naoConformes + naoSeAplica;
+  const completionPercentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
   const criticos = items.filter(i => i.status === 'nao_conforme' && i.criticality === 'Crítico').length;
   const medios = items.filter(i => i.status === 'nao_conforme' && i.criticality === 'Médio').length;
   const baixos = items.filter(i => i.status === 'nao_conforme' && i.criticality === 'Baixo').length;
@@ -33,6 +37,95 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ items, onFilterS
 
   return (
     <div className="bg-white border border-neutral-200 rounded-lg p-5 shadow-xs mb-6">
+      {/* Barra de Progresso Visual de Conclusão da Inspeção */}
+      <div className="mb-5 pb-4 border-b border-neutral-100 bg-neutral-50/80 -mx-5 -mt-5 p-5 rounded-t-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">
+              Progresso Geral da Inspeção em Campo
+            </span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-xs">
+            <span className="text-neutral-500">
+              {completedCount} de {total} itens avaliados
+            </span>
+            <span className="text-neutral-300">·</span>
+            <span className="font-bold text-neutral-900 text-sm">{completionPercentage}% concluído</span>
+          </div>
+        </div>
+
+        {/* Barra Visual com Segmentação dos Status */}
+        <div className="w-full h-3 bg-neutral-200 rounded-full overflow-hidden flex shadow-inner">
+          <div
+            className="bg-emerald-600 h-full transition-all duration-500 relative group cursor-pointer"
+            style={{ width: `${total > 0 ? (conformes / total) * 100 : 0}%` }}
+            title={`Conformes: ${conformes} (${total > 0 ? Math.round((conformes / total) * 100) : 0}%)`}
+            onClick={() => onFilterStatus?.('conforme')}
+          />
+          <div
+            className="bg-rose-500 h-full transition-all duration-500 relative group cursor-pointer"
+            style={{ width: `${total > 0 ? (naoConformes / total) * 100 : 0}%` }}
+            title={`Não Conformes: ${naoConformes} (${total > 0 ? Math.round((naoConformes / total) * 100) : 0}%)`}
+            onClick={() => onFilterStatus?.('nao_conforme')}
+          />
+          <div
+            className="bg-neutral-600 h-full transition-all duration-500 relative group cursor-pointer"
+            style={{ width: `${total > 0 ? (naoSeAplica / total) * 100 : 0}%` }}
+            title={`Não se Aplica: ${naoSeAplica} (${total > 0 ? Math.round((naoSeAplica / total) * 100) : 0}%)`}
+            onClick={() => onFilterStatus?.('nao_se_aplica')}
+          />
+          <div
+            className="bg-amber-400/70 h-full transition-all duration-500 relative group cursor-pointer"
+            style={{ width: `${total > 0 ? (pendentes / total) * 100 : 0}%` }}
+            title={`Pendentes de Vistoria: ${pendentes} (${total > 0 ? Math.round((pendentes / total) * 100) : 0}%)`}
+            onClick={() => onFilterStatus?.('pendente')}
+          />
+        </div>
+
+        {/* Legenda Dinâmica da Barra de Conclusão */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-neutral-600 mt-2 font-medium">
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={() => onFilterStatus?.('conforme')}
+              className="flex items-center gap-1.5 hover:text-emerald-700 transition-colors cursor-pointer"
+            >
+              <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
+              <span>Conformes: <strong className="font-mono">{conformes}</strong> ({total > 0 ? Math.round((conformes / total) * 100) : 0}%)</span>
+            </button>
+            <button
+              onClick={() => onFilterStatus?.('nao_conforme')}
+              className="flex items-center gap-1.5 hover:text-rose-700 transition-colors cursor-pointer"
+            >
+              <span className="w-2.5 h-2.5 rounded-xs bg-rose-500 inline-block" />
+              <span>Não Conformes: <strong className="font-mono">{naoConformes}</strong> ({total > 0 ? Math.round((naoConformes / total) * 100) : 0}%)</span>
+            </button>
+            <button
+              onClick={() => onFilterStatus?.('nao_se_aplica')}
+              className="flex items-center gap-1.5 hover:text-neutral-800 transition-colors cursor-pointer"
+            >
+              <span className="w-2.5 h-2.5 rounded-xs bg-neutral-600 inline-block" />
+              <span>N/A: <strong className="font-mono">{naoSeAplica}</strong></span>
+            </button>
+            <button
+              onClick={() => onFilterStatus?.('pendente')}
+              className="flex items-center gap-1.5 hover:text-amber-700 transition-colors cursor-pointer"
+            >
+              <span className="w-2.5 h-2.5 rounded-xs bg-amber-400 inline-block" />
+              <span>Pendentes de Campo: <strong className="font-mono">{pendentes}</strong> ({total > 0 ? Math.round((pendentes / total) * 100) : 0}%)</span>
+            </button>
+          </div>
+
+          <div className="text-[11px] font-mono text-neutral-500">
+            {pendentes === 0 ? (
+              <span className="text-emerald-700 font-bold">✓ Vistoria 100% finalizada</span>
+            ) : (
+              <span>Restam {pendentes} item(ns) a inspecionar</span>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-neutral-100">
         <div>
           <div className="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-1">
@@ -40,7 +133,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ items, onFilterS
           </div>
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
-              Índice de Conformidade Global
+              Índice de Conformidade Normativa
             </h2>
             <span className={`text-sm font-semibold ${classificationColor}`}>
               ({classification})
@@ -48,10 +141,10 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ items, onFilterS
           </div>
         </div>
 
-        {/* Barra de progresso visual */}
+        {/* Barra de conformidade normativa */}
         <div className="flex flex-col gap-1.5 w-full lg:w-72">
           <div className="flex justify-between text-xs text-neutral-600">
-            <span>Aderência Normativa</span>
+            <span>Aderência Normativa (Itens Válidos)</span>
             <span className="font-mono font-bold tabular-nums text-neutral-900">{rate}%</span>
           </div>
           <div className="w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden flex">
